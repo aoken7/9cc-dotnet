@@ -21,7 +21,7 @@ namespace _9cc.Tests
             process.WaitForExit();
             
             process.StartInfo.FileName = "./tmp";
-            process.StartInfo.Arguments = "123";
+            process.StartInfo.Arguments = "";
             process.Start();
 
             process.WaitForExit();
@@ -52,5 +52,13 @@ namespace _9cc.Tests
             Assert.AreEqual(result,expected);
         }
 
+        [TestMethod]
+        public void RunTest3()
+        {   
+            var input = "5+20-4";        
+            var expected = "21";
+            var result = GenRunFile(input);
+            Assert.AreEqual(result,expected);
+        }
     }
 }
