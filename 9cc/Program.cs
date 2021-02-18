@@ -6,14 +6,15 @@ namespace _9cc
     {
         static int Main(string[] args)
         {
-            if(args.Length != 1)
+            if (args.Length != 1)
             {
                 Console.Error.WriteLine("Incorrect number of arguments");
                 return 1;
             }
 
             var compiler = new Compiler();
-            Console.WriteLine(compiler.compile(args[0]));
+            var assemblyCode = compiler.compile(args[0]);
+            Console.WriteLine(assemblyCode);
 
             return 0;
         }
