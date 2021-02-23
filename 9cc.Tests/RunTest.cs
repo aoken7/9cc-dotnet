@@ -69,5 +69,32 @@ namespace _9cc.Tests
             var result = GenRunFile(input);
             Assert.AreEqual(result, expected);
         }
+        
+        [TestMethod]
+        public void Multiple1()
+        {
+            var input = "5+6*7";
+            var expected = "47";
+            var result = GenRunFile(input);
+            Assert.AreEqual(result, expected);
+        }
+
+        [TestMethod]
+        public void Multiple2()
+        {
+            var input = "5*(9-6)";
+            var expected = "15";
+            var result = GenRunFile(input);
+            Assert.AreEqual(result, expected);
+        }
+
+        [TestMethod]
+        public void Division()
+        {
+            var input = "(3+5)/2";
+            var expected = "4";
+            var result = GenRunFile(input);
+            Assert.AreEqual(result, expected);
+        }
     }
 }

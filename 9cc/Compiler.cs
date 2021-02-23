@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace _9cc
 {
@@ -75,21 +76,31 @@ namespace _9cc
 
             s = s.Replace(" ", "");
 
+            if (!Char.IsDigit(s[0]))
+            {
+                rightIdx++;
+                leftIdx++;
+                splited.Add(s[0].ToString());
+            }
+
             for (; rightIdx < s.Length; rightIdx++)
             {
                 if (!Char.IsDigit(s[rightIdx]))
                 {
-                    splited.Add(s.Substring(leftIdx, rightIdx - leftIdx));
+                    if (leftIdx < rightIdx)
+                    {
+                        splited.Add(s.Substring(leftIdx, rightIdx - leftIdx));
+                    }
                     splited.Add(s[rightIdx].ToString());
                     leftIdx = rightIdx + 1;
                 }
-                if (Char.IsWhiteSpace(s, rightIdx))
-                {
-                    rightIdx++;
-                    leftIdx = rightIdx;
-                }
+
             }
-            splited.Add(s.Substring(leftIdx, rightIdx - leftIdx));
+
+            if (Char.IsDigit(s[s.Length - 1]))
+            {
+                splited.Add(s.Substring(leftIdx, rightIdx - leftIdx));
+            }
             return splited;
         }
 
@@ -101,8 +112,7 @@ namespace _9cc
 
             while (splitedIndex < splited.Count)
             {
-
-                if (splited[splitedIndex] == "+" || splited[splitedIndex] == "-")
+                if (Regex.IsMatch(splited[splitedIndex], "[+-/()*]"))
                 {
                     var token = new_token(TokenKind.TK_RESERVED, splited[splitedIndex++]);
                     TokenList.Add(token);
@@ -119,8 +129,8 @@ namespace _9cc
                     continue;
                 }
 
-                Console.Error.WriteLine(string.Join("",splited));
-                Console.Error.WriteLine($"{new String(' ', splitedIndex-1)} ^");
+                Console.Error.WriteLine(string.Join("", splited));
+                //Console.Error.WriteLine($"{new String(' ', splitedIndex - 1)} ^");
                 Console.Error.WriteLine("Can't tokenize.");
                 Environment.Exit(-1);
             }
@@ -128,31 +138,154 @@ namespace _9cc
             TokenList.Add(new_token(TokenKind.TK_EOF, ""));
         }
 
+        enum NodeKind
+        {
+            ND_ADD,
+            ND_SUB,
+            ND_MUL,
+            ND_DIV,
+            ND_NUM,
+        }
+
+        struct Node
+        {
+            public NodeKind kind;
+            public int lhs;
+            public int rhs;
+            public int val;
+        }
+
+        List<Node> absTree = new List<Node>();
+
+        Node new_node(NodeKind kind, int lhs, int rhs)
+        {
+            Node node = new Node();
+            node.kind = kind;
+            node.lhs = lhs;
+            node.rhs = rhs;
+            return node;
+        }
+
+        Node new_node_num(int val)
+        {
+            Node node = new Node();
+            node.kind = NodeKind.ND_NUM;
+            node.val = val;
+            return node;
+        }
+
+        int primary()
+        {
+            if (consume('('))
+            {
+                int index = expr();
+                expect(')');
+                return index;
+            }
+            var nodeNum = new_node_num(expect_number());
+            absTree.Add(nodeNum);
+            return absTree.Count - 1;
+        }
+
+        int mul()
+        {
+            Node node = new Node();
+            node.lhs = primary();
+            for (; ; )
+            {
+                if (consume('*'))
+                {
+                    node = new_node(NodeKind.ND_MUL, node.lhs, primary());
+                    absTree.Add(node);
+                    node.lhs = absTree.Count - 1;
+                }
+                else if (consume('/'))
+                {
+                    node = new_node(NodeKind.ND_DIV, node.lhs, primary());
+                    absTree.Add(node);
+                    node.lhs = absTree.Count - 1;
+                }
+                else
+                {
+                    return absTree.Count - 1;
+                }
+            }
+        }
+
+        int expr()
+        {
+            Node node = new Node();
+            node.lhs = mul();
+            for (; ; )
+            {
+                if (consume('+'))
+                {
+                    node = new_node(NodeKind.ND_ADD, node.lhs, mul());
+                    absTree.Add(node);
+                    node.lhs = absTree.Count - 1;
+                }
+                else if (consume('-'))
+                {
+                    node = new_node(NodeKind.ND_SUB, node.lhs, mul());
+                    absTree.Add(node);
+                    node.lhs = absTree.Count - 1;
+                }
+                else
+                {
+                    return absTree.Count - 1;
+                }
+            }
+        }
+
+        string objctCode = "";
+
+        void gen(Node node)
+        {
+            if (node.kind == NodeKind.ND_NUM)
+            {
+                objctCode += $"\tpush {node.val}\n";
+                return;
+            }
+
+            gen(absTree[node.lhs]);
+            gen(absTree[node.rhs]);
+
+            objctCode += $"\tpop rdi\n";
+            objctCode += $"\tpop rax\n";
+
+            switch (node.kind)
+            {
+                case NodeKind.ND_ADD:
+                    objctCode += $"\tadd rax, rdi\n";
+                    break;
+                case NodeKind.ND_SUB:
+                    objctCode += $"\tsub rax, rdi\n";
+                    break;
+                case NodeKind.ND_MUL:
+                    objctCode += $"\timul rax, rdi\n";
+                    break;
+                case NodeKind.ND_DIV:
+                    objctCode += $"\tcqo\n";
+                    objctCode += $"\tidiv rdi\n";
+                    break;
+            }
+            objctCode += $"\tpush rax\n";
+        }
 
         public string compile(string input)
         {
-            string objctCode = "";
 
             tokenize(input);
+
+            int index = expr();
 
             objctCode += ".intel_syntax noprefix\n";
             objctCode += ".globl main\n";
             objctCode += "main:\n";
 
-            objctCode += $"\tmov rax, {expect_number()}\n";
+            gen(absTree[index]);
 
-            while (!at_eof())
-            {
-                if (consume('+'))
-                {
-                    objctCode += $"\tadd rax, {expect_number()}\n";
-                    continue;
-                }
-
-                expect('-');
-                objctCode += $"\tsub rax, {expect_number()}\n";
-            }
-
+            objctCode += "\tpop rax\n";
             objctCode += "\tret\n";
 
             return objctCode;
