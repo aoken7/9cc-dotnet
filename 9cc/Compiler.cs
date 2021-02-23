@@ -119,6 +119,8 @@ namespace _9cc
                     continue;
                 }
 
+                Console.Error.WriteLine(string.Join("",splited));
+                Console.Error.WriteLine($"{new String(' ', splitedIndex-1)} ^");
                 Console.Error.WriteLine("Can't tokenize.");
                 Environment.Exit(-1);
             }
