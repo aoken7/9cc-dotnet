@@ -74,13 +74,13 @@ namespace _9cc
             var splited = new List<string>();
             int leftIdx = 0, rightIdx = 0;
 
-            s = s.Replace(" ", "");
+            s = Regex.Replace(s,@"\s+"," ");
 
             if (!Char.IsDigit(s[0]))
             {
                 rightIdx++;
                 leftIdx++;
-                splited.Add(s[0].ToString());
+                if(s[0].ToString() != " ") splited.Add(s[0].ToString());
             }
 
             for (; rightIdx < s.Length; rightIdx++)
@@ -91,7 +91,7 @@ namespace _9cc
                     {
                         splited.Add(s.Substring(leftIdx, rightIdx - leftIdx));
                     }
-                    splited.Add(s[rightIdx].ToString());
+                    if(s[rightIdx].ToString() != " ") splited.Add(s[rightIdx].ToString());
                     leftIdx = rightIdx + 1;
                 }
 
