@@ -74,13 +74,13 @@ namespace _9cc
             var splited = new List<string>();
             int leftIdx = 0, rightIdx = 0;
 
-            s = Regex.Replace(s,@"\s+"," ");
+            s = Regex.Replace(s, @"\s+", " ");
 
             if (!Char.IsDigit(s[0]))
             {
                 rightIdx++;
                 leftIdx++;
-                if(s[0].ToString() != " ") splited.Add(s[0].ToString());
+                if (s[0].ToString() != " ") splited.Add(s[0].ToString());
             }
 
             for (; rightIdx < s.Length; rightIdx++)
@@ -91,7 +91,7 @@ namespace _9cc
                     {
                         splited.Add(s.Substring(leftIdx, rightIdx - leftIdx));
                     }
-                    if(s[rightIdx].ToString() != " ") splited.Add(s[rightIdx].ToString());
+                    if (s[rightIdx].ToString() != " ") splited.Add(s[rightIdx].ToString());
                     leftIdx = rightIdx + 1;
                 }
 
@@ -130,7 +130,7 @@ namespace _9cc
                 }
 
                 Console.Error.WriteLine(string.Join("", splited));
-                //Console.Error.WriteLine($"{new String(' ', splitedIndex - 1)} ^");
+                Console.Error.WriteLine($"{new String(' ', splitedIndex - 1)} ^");
                 Console.Error.WriteLine("Can't tokenize.");
                 Environment.Exit(-1);
             }
@@ -187,21 +187,38 @@ namespace _9cc
             return absTree.Count - 1;
         }
 
+        int unary()
+        {
+            if (consume('+'))
+            {
+                return primary();
+            }
+            if (consume('-'))
+            {
+                var node = new_node_num(0);
+                absTree.Add(node);
+                node = new_node(NodeKind.ND_SUB, absTree.Count - 1, primary());
+                absTree.Add(node);
+                return absTree.Count - 1;
+            }
+            return primary();
+        }
+
         int mul()
         {
             Node node = new Node();
-            node.lhs = primary();
+            node.lhs = unary();
             for (; ; )
             {
                 if (consume('*'))
                 {
-                    node = new_node(NodeKind.ND_MUL, node.lhs, primary());
+                    node = new_node(NodeKind.ND_MUL, node.lhs, unary());
                     absTree.Add(node);
                     node.lhs = absTree.Count - 1;
                 }
                 else if (consume('/'))
                 {
-                    node = new_node(NodeKind.ND_DIV, node.lhs, primary());
+                    node = new_node(NodeKind.ND_DIV, node.lhs, unary());
                     absTree.Add(node);
                     node.lhs = absTree.Count - 1;
                 }

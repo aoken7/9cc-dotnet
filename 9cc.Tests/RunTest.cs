@@ -96,5 +96,23 @@ namespace _9cc.Tests
             var result = GenRunFile(input);
             Assert.AreEqual(result, expected);
         }
+
+        [TestMethod]
+        public void Unary1()
+        {
+            var input = "-10+20";
+            var expected = "10";
+            var result = GenRunFile(input);
+            Assert.AreEqual(result, expected);
+        }
+
+        [TestMethod]
+        public void Unary2()
+        {
+            var input = "+30+(-20)";
+            var expected = "10";
+            var result = GenRunFile(input);
+            Assert.AreEqual(result, expected);
+        }
     }
 }
